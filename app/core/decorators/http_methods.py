@@ -1,4 +1,4 @@
-from typing import Callable, TypeVar
+from typing import Callable, TypeVar, Optional, Type, Any
 from enum import Enum
 import types
 
@@ -15,7 +15,7 @@ class HTTPMethod(Enum):
     OPTIONS = "OPTIONS"
 
 
-def route(method: HTTPMethod) -> Callable[[str], Callable[[F], F]]:
+def route(method: HTTPMethod) -> Callable[[str, Optional[Type[Any]]], Callable[[F], F]]:
     """
     Factory function to create a route decorator for a specific HTTP method.
 
@@ -23,15 +23,17 @@ def route(method: HTTPMethod) -> Callable[[str], Callable[[F], F]]:
         method (HTTPMethod): The HTTP method for the route (e.g., GET, POST).
 
     Returns:
-        Callable[[str], Callable[[F], F]]: A decorator that takes a path and decorates a function
-                                           with the route configuration.
+        Callable[[str, Optional[Type[Document]]], Callable[[F], F]]: A decorator that takes a path and decorates a function
+                                                                   with the route configuration.
     """
-    def decorator_factory(path: str) -> Callable[[F], F]:
+    def decorator_factory(path: str, response_model: Optional[Type[Any]] = None, status_code: int = 200) -> Callable[[F], F]:
         """
         A decorator for defining a route with a given HTTP method and path.
 
         Args:
             path (str): The path for the route.
+            response_model (Optional[Type[Document]]): The response model for the route.
+            status_code (int): The HTTP status code for the response.
 
         Returns:
             Callable[[F], F]: The decorated function with route configuration metadata.
@@ -43,7 +45,8 @@ def route(method: HTTPMethod) -> Callable[[str], Callable[[F], F]]:
                     f"@{method.name} decorator can only be applied to functions, not to '{type(func).__name__}'.")
 
             # Attach route configuration to the function
-            func._route_config = (path, method.value)
+            func._route_config = (path, method.value,
+                                  response_model, status_code)
             return func
         return decorator
 
